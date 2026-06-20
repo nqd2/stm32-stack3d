@@ -303,7 +303,8 @@ static void DrawTitleScreen(void)
     ILI9341_DrawText("Stack on STM32F429", FONT1, 25, 52, COLOR_YELLOW, COLOR_BACKGROUND);
     ILI9341_DrawHLine(25, 68, 135, COLOR_ACCENT_2);
 
-    GFX_DrawRectangle((Point_t){20, 90}, (Point_t){140, 85}, COLOR_DARKGREY);
+    GFX_DrawRectangle((Point_t){20, 90}, (Point_t){140, 160}, COLOR_ACCENT_1);
+    GFX_DrawRectangle((Point_t){25, 95}, (Point_t){135, 155}, COLOR_ACCENT_2);
 
     ILI9341_DrawText(">", FONT2, 28, 105, COLOR_YELLOW, COLOR_BACKGROUND);
     ILI9341_DrawText("PLAY GAME", FONT2, 42, 105, COLOR_WHITE, COLOR_BACKGROUND);
