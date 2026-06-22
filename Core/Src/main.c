@@ -21,12 +21,16 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "fonts.h"
-#include "ILI9341_STM32_Driver.h"
-#include "ILI9341_GFX.h"
-#include "graphics_2d.h"
-#include "graphics_3d.h"
-#include "stack_game.h"
+#include "Display/fonts.h"
+#include "Display/ILI9341_STM32_Driver.h"
+#include "Display/ILI9341_GFX.h"
+#include "Graphics/graphics_2d.h"
+#include "Graphics/graphics_3d.h"
+#include "Games/stack_game.h"
+#include "Communication/espi2c.h"
+#include "Games/tetris_game.h"
+#include "Games/app_state_manager.h"
+#include "Communication/input_manager.h"
 #include <stdio.h>
 /* USER CODE END Includes */
 
@@ -38,18 +42,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define BUTTON_DEBOUNCE_MS 50U
-#define COLOR_BACKGROUND  0x0862  // #0b0c10
-#define COLOR_ACCENT_1    0x07E0  // Cyan
-#define COLOR_ACCENT_2    0xF8E0  // Pink
-#define COLOR_GRID        0x786F  // Magenta/Purple neon grid
-#define COLOR_WHITE       0xFFFF
-#define COLOR_LIGHTGREY   0xC618
-#define COLOR_DARKGREY    0x7BEF
-#define COLOR_RED         0xF800
-#define COLOR_ORANGE      0xFD20
-#define COLOR_YELLOW      0xFFE0
-
-#define STACK_OFFSET_X    4
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -58,29 +50,35 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
 SPI_HandleTypeDef hspi5;
 DMA_HandleTypeDef hdma_spi5_tx;
+UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 static volatile uint32_t button_last_edge_tick = 0U;
 static volatile uint8_t button_press_events = 0U;
-static Mesh_t cube_mesh;
-static StackGame_t game;
-
 /* USER CODE END PV */
 
-/* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_SPI5_Init(void);
+static void MX_I2C1_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void on_espi2c_data(uint8_t *data, uint16_t length);
 /* USER CODE END PFP */
 
-/* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+static void on_espi2c_data(uint8_t *data, uint16_t length)
+{
+  for (uint16_t i = 0; i < length; i++)
+  {
+    InputAction_t action = InputManager_MapCharacter((char)data[i]);
+    AppStateManager_HandleAction(action);
+  }
+}
 /* USER CODE END 0 */
 
 /**
@@ -93,8 +91,6 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
@@ -110,20 +106,20 @@ int main(void)
 
   /* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_SPI5_Init();
+  MX_I2C1_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
   ILI9341_Init();
   ILI9341_SetRotation(SCREEN_ROTATION);
   ILI9341_FillScreen(BLACK);
 
-  cube_mesh = GFX3D_CreateCube(1.0f, WHITE);
-  StackGame_Init(&game);
-  uint32_t previous_frame_tick = HAL_GetTick();
+  espi2c_init(&hi2c1, &huart1, on_espi2c_data);
+  AppStateManager_Init();
 
+  uint32_t previous_frame_tick = HAL_GetTick();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -133,6 +129,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    espi2c_poll();
+
     uint32_t current_frame_tick = HAL_GetTick();
     uint32_t primask = __get_PRIMASK();
     __disable_irq();
@@ -142,13 +140,14 @@ int main(void)
 
     float delta_seconds = (float)(current_frame_tick - previous_frame_tick) * 0.001f;
     previous_frame_tick = current_frame_tick;
+
     while (press_events > 0U) {
-      StackGame_HandlePress(&game);
+      AppStateManager_HandleAction(INPUT_ACTION_SELECT);
       press_events--;
     }
-    StackGame_Update(&game, delta_seconds);
 
-    StackGame_Render(&game, &cube_mesh);
+    AppStateManager_Update(delta_seconds);
+    AppStateManager_Render();
   }
   /* USER CODE END 3 */
 }
@@ -162,14 +161,9 @@ void SystemClock_Config(void)
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage
-  */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -184,15 +178,11 @@ void SystemClock_Config(void)
     Error_Handler();
   }
 
-  /** Activate the Over-Drive mode
-  */
   if (HAL_PWREx_EnableOverDrive() != HAL_OK)
   {
     Error_Handler();
   }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
@@ -204,6 +194,50 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 16;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
 }
 
 /**
@@ -241,6 +275,39 @@ static void MX_SPI5_Init(void)
   /* USER CODE BEGIN SPI5_Init 2 */
 
   /* USER CODE END SPI5_Init 2 */
+
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
 
 }
 
@@ -307,7 +374,6 @@ static void MX_GPIO_Init(void)
 
   HAL_NVIC_SetPriority(EXTI0_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
-
   /* USER CODE END MX_GPIO_Init_2 */
 }
 
@@ -317,14 +383,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   if (GPIO_Pin != USER_BUTTON_Pin) return;
 
   uint32_t now = HAL_GetTick();
-  if (button_last_edge_tick != 0U &&
-      (now - button_last_edge_tick < BUTTON_DEBOUNCE_MS)) {
+  if (button_last_edge_tick != 0U && (now - button_last_edge_tick < BUTTON_DEBOUNCE_MS)) {
     return;
   }
   button_last_edge_tick = now;
   if (button_press_events < UINT8_MAX) button_press_events++;
 }
-
 /* USER CODE END 4 */
 
 /**
@@ -334,13 +398,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
   while (1)
   {
   }
   /* USER CODE END Error_Handler_Debug */
 }
+
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
@@ -352,8 +416,6 @@ void Error_Handler(void)
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

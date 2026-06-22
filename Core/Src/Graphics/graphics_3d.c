@@ -5,7 +5,7 @@
   ******************************************************************************
   */
 
-#include "graphics_3d.h"
+#include "Graphics/graphics_3d.h"
 
 #define NUM_CHUNKS (GFX_HEIGHT / CHUNK_HEIGHT)
 #define FACE_EDGE_01 0x01u
@@ -19,7 +19,7 @@
 _Static_assert(RGB565_TO_WIRE_ORDER(0xF800u) == 0x00F8u,
                "RGB565 wire order must send the high byte first");
 
-static uint16_t chunk_color_buffer[GFX_WIDTH * CHUNK_HEIGHT];
+uint16_t chunk_color_buffer[GFX_WIDTH * CHUNK_HEIGHT];
 static uint16_t chunk_z_buffer[GFX_WIDTH * CHUNK_HEIGHT];
 
 typedef struct {
@@ -48,7 +48,7 @@ static RasterVertex_t ProjectVertex(Matrix4_t mvp, Vector3_t v)
     };
 }
 
-static void ILI9341_SendPixelBuffer(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *buffer)
+void ILI9341_SendPixelBuffer(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *buffer)
 {
     ILI9341_SetAddress(x, y, x + w - 1, y + h - 1);
 

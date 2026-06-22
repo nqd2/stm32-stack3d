@@ -38,7 +38,7 @@
 //---------------------------------------------------------------------------//
 //	This file was modified by Cong Thuan Do (HUST) for STM32F429-DISC1 board //
 //---------------------------------------------------------------------------//
-#include "fonts.h"
+#include "Display/fonts.h"
 
 const uint8_t Arial_Narrow8x12[] = {
 		/* Offset, Width, Height, BPL */

@@ -5,7 +5,7 @@
   ******************************************************************************
   */
 
-#include "graphics_2d.h"
+#include "Graphics/graphics_2d.h"
 
 static uint8_t gfx_zoom = 1;
 
@@ -318,4 +318,16 @@ void GFX_SetZoom(uint8_t zoom)
 uint8_t GFX_GetZoom(void)
 {
   return gfx_zoom;
+}
+
+void GFX_DrawCursor(int16_t x, int16_t y, uint16_t color)
+{
+  GFX_DrawCircle((Point_t){x, y}, 6, color);
+  for (int16_t dy = -1; dy <= 1; dy++)
+  {
+    for (int16_t dx = -1; dx <= 1; dx++)
+    {
+      GFX_DrawPoint((Point_t){x + dx, y + dy}, color);
+    }
+  }
 }

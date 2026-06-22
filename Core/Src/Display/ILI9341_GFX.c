@@ -46,8 +46,8 @@
 //	This file was modified by Cong Thuan Do (HUST) for STM32F429-DISC1 board //
 //---------------------------------------------------------------------------//
 
-#include "ILI9341_STM32_Driver.h"
-#include "ILI9341_GFX.h"
+#include "Display/ILI9341_STM32_Driver.h"
+#include "Display/ILI9341_GFX.h"
 
 /* imprecise small delay */
 __STATIC_INLINE void DelayUs(volatile uint32_t us)

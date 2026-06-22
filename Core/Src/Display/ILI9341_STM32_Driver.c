@@ -81,7 +81,7 @@
 //	This file was modified by Cong Thuan Do (HUST) for STM32F429-DISC1 board //
 //---------------------------------------------------------------------------//
 
-#include "ILI9341_STM32_Driver.h"
+#include "Display/ILI9341_STM32_Driver.h"
 
 volatile uint16_t LCD_HEIGHT = ILI9341_SCREEN_HEIGHT;
 volatile uint16_t LCD_WIDTH	 = ILI9341_SCREEN_WIDTH;
@@ -338,7 +338,7 @@ void ILI9341_DrawColor(uint16_t color)
 	ILI9341_WriteBuffer(buffer, sizeof(buffer));
 }
 
-// Modified by Nguyen Quy Duc to fix bit hopping leading to wrong colours
+// "nnqqdd22" this function was modified by nqd2 to fix bit hopping leading to wrong colours
 void ILI9341_DrawColorBurst(uint16_t color, uint32_t size)
 {
 	uint32_t SendingSize = size * 2;

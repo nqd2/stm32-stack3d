@@ -1,4 +1,4 @@
-#include "stack_game.h"
+#include "Games/stack_game.h"
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
@@ -309,9 +309,49 @@ static void DrawTitleScreen(void)
     ILI9341_DrawText(">", FONT2, 28, 105, COLOR_YELLOW, COLOR_BACKGROUND);
     ILI9341_DrawText("PLAY GAME", FONT2, 42, 105, COLOR_WHITE, COLOR_BACKGROUND);
     ILI9341_DrawText("HIGH SCORES", FONT2, 42, 135, COLOR_DARKGREY, COLOR_BACKGROUND);
-
     ILI9341_DrawText("PRESS THE BUTTON", FONT2, 20, 195, COLOR_YELLOW, COLOR_BACKGROUND);
     ILI9341_DrawText("TO START THE GAME", FONT1, 20, 212, COLOR_WHITE, COLOR_BACKGROUND);
+}
+
+static void DrawChunkCursor(uint16_t *buffer, int y_start, int chunk_height, int16_t cx, int16_t cy, uint16_t color)
+{
+    // Draw 3x3 square at center
+    for (int16_t dy = -1; dy <= 1; dy++) {
+        int16_t sy = cy + dy;
+        if (sy < y_start || sy >= y_start + chunk_height) continue;
+        for (int16_t dx = -1; dx <= 1; dx++) {
+            int16_t sx = cx + dx;
+            if (sx < 0 || sx >= GFX_WIDTH) continue;
+            buffer[(sy - y_start) * GFX_WIDTH + sx] = color;
+        }
+    }
+    
+    // Draw circle of radius 6
+    int x = 6;
+    int y = 0;
+    int err = 0;
+    while (x >= y) {
+        int pts[8][2] = {
+            {cx + x, cy + y}, {cx + y, cy + x},
+            {cx - y, cy + x}, {cx - x, cy + y},
+            {cx - x, cy - y}, {cx - y, cy - x},
+            {cx + y, cy - x}, {cx + x, cy - y}
+        };
+        for (int i = 0; i < 8; i++) {
+            int px = pts[i][0];
+            int py = pts[i][1];
+            if (px >= 0 && px < GFX_WIDTH && py >= y_start && py < y_start + chunk_height) {
+                buffer[(py - y_start) * GFX_WIDTH + px] = color;
+            }
+        }
+        y++;
+        if (err <= 0) {
+            err += 2 * y + 1;
+        } else {
+            x--;
+            err -= 2 * x + 1;
+        }
+    }
 }
 
 static void DrawGameOverlay(uint16_t *buffer, int y_start,
@@ -329,6 +369,10 @@ static void DrawGameOverlay(uint16_t *buffer, int y_start,
 
   if (game->phase != STACK_PHASE_GAME_OVER) return;
 
+  extern int16_t cursor_x;
+  extern int16_t cursor_y;
+  extern uint8_t show_cursor;
+
   GFX3D_FillChunkRect(buffer, y_start, chunk_height, 48, 72, 225, 97, 0x0841U);
   GFX3D_FillChunkRect(buffer, y_start, chunk_height, 48, 72, 225, 1, WHITE);
   GFX3D_FillChunkRect(buffer, y_start, chunk_height, 48, 168, 225, 1, WHITE);
@@ -338,11 +382,26 @@ static void DrawGameOverlay(uint16_t *buffer, int y_start,
                       92, 86, 0xF800U, 0x0841U);
   snprintf(text, sizeof(text), "SCORE %lu  BEST %lu",
            (unsigned long)game->score, (unsigned long)game->best_score);
-  GFX3D_DrawChunkText(buffer, y_start, chunk_height, text, FONT2, 76, 121,
+  GFX3D_DrawChunkText(buffer, y_start, chunk_height, text, FONT2, 76, 110,
                       WHITE, 0x0841U);
-  GFX3D_DrawChunkText(buffer, y_start, chunk_height,
-                      "PRESS BUTTON TO RESTART", FONT1, 69, 147,
-                      0xFFE0U, 0x0841U);
+
+  // Highlight colors based on cursor hover
+  uint16_t restart_btn_color = (cursor_x >= 60 && cursor_x <= 150 && cursor_y >= 135 && cursor_y <= 160) ? 0x07E0 : 0x7BEF;
+  uint16_t menu_btn_color = (cursor_x >= 170 && cursor_x <= 260 && cursor_y >= 135 && cursor_y <= 160) ? 0x07E0 : 0x7BEF;
+
+  // Restart Button: X: 60-150, Y: 135-160
+  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 60, 135, 90, 25, restart_btn_color);
+  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 62, 137, 86, 21, 0x0841U);
+  GFX3D_DrawChunkText(buffer, y_start, chunk_height, "RESTART", FONT1, 78, 142, restart_btn_color, 0x0841U);
+
+  // Menu Button: X: 170-260, Y: 135-160
+  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 170, 135, 90, 25, menu_btn_color);
+  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 172, 137, 86, 21, 0x0841U);
+  GFX3D_DrawChunkText(buffer, y_start, chunk_height, "MENU", FONT1, 200, 142, menu_btn_color, 0x0841U);
+
+  if (show_cursor) {
+      DrawChunkCursor(buffer, y_start, chunk_height, cursor_x, cursor_y, 0xFFE0U);
+  }
 }
 
 void StackGame_Render(StackGame_t *game, Mesh_t *cube_mesh)

@@ -50,7 +50,7 @@
 #define ILI9341_GFX_H
 
 #include "stm32f4xx_hal.h"
-#include "fonts.h"
+#include "Display/fonts.h"
 
 #define HORIZONTAL_IMAGE	0
 #define VERTICAL_IMAGE		1

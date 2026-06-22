@@ -10,14 +10,14 @@
 #define GRAPHICS_2D_H
 
 #include "stm32f4xx_hal.h"
-#include "ILI9341_STM32_Driver.h"
-#include "ILI9341_GFX.h"
+#include "Display/ILI9341_STM32_Driver.h"
+#include "Display/ILI9341_GFX.h"
 #include <math.h>
 #include <stdlib.h>
 #include <stdint.h>
 
 /* ---- Screen configuration ---- */
-#define SCREEN_ROTATION SCREEN_HORIZONTAL_2
+#define SCREEN_ROTATION SCREEN_HORIZONTAL_1
 
 #if (SCREEN_ROTATION == SCREEN_VERTICAL_1 || SCREEN_ROTATION == SCREEN_VERTICAL_2)
   #define GFX_WIDTH  240
@@ -50,6 +50,7 @@ void GFX_DrawAxis(uint16_t color);
 void GFX_DrawFunction(float (*f)(float), uint16_t color);
 void GFX_DrawFunctionAA(float (*f)(float), uint16_t color, uint16_t bgcolor);
 void GFX_FillBetweenFunctions(float (*f_top)(float), float (*f_bottom)(float), uint16_t color);
+void GFX_DrawCursor(int16_t x, int16_t y, uint16_t color);
 
 void GFX_SetZoom(uint8_t zoom);
 uint8_t GFX_GetZoom(void);

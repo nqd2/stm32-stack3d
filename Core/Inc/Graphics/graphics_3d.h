@@ -10,8 +10,8 @@
 #define GRAPHICS_3D_H
 
 #include "stm32f4xx_hal.h"
-#include "ILI9341_STM32_Driver.h"
-#include "graphics_2d.h"
+#include "Display/ILI9341_STM32_Driver.h"
+#include "Graphics/graphics_2d.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -99,5 +99,8 @@ void GFX3D_DrawChunkText(uint16_t *buffer, int y_start, int chunk_height,
                          uint16_t color, uint16_t background_color);
 void GFX3D_RenderObjects(const GFX3D_RenderObject_t *objects, int object_count, Matrix4_t view, Matrix4_t proj, GFX3D_RenderOptions_t options);
 void GFX3D_RenderScene(Mesh_t *mesh, Matrix4_t world, Matrix4_t view, Matrix4_t proj, uint16_t bgcolor, uint8_t show_wireframe);
+
+void ILI9341_SendPixelBuffer(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *buffer);
+extern uint16_t chunk_color_buffer[GFX_WIDTH * CHUNK_HEIGHT];
 
 #endif /* GRAPHICS_3D_H */

@@ -1,7 +1,7 @@
 #ifndef STACK_GAME_H
 #define STACK_GAME_H
 
-#include "graphics_3d.h"
+#include "Graphics/graphics_3d.h"
 #include <stdint.h>
 
 #define STACK_MAX_VISIBLE_BLOCKS 20
