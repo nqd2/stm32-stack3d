@@ -313,7 +313,7 @@ void TetrisGame_Render(TetrisGame_t *game, int16_t cursor_x, int16_t cursor_y, u
 
     for (int chunk = 0; chunk < (GFX_HEIGHT / CHUNK_HEIGHT); chunk++) {
         int y_start = chunk * CHUNK_HEIGHT;
-        int y_end = y_start + CHUNK_HEIGHT - 1;
+        // int y_end = y_start + CHUNK_HEIGHT - 1;
 
         // Clear chunk color buffer
         for (int i = 0; i < GFX_WIDTH * CHUNK_HEIGHT; i++) {
