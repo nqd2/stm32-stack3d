@@ -1,4 +1,5 @@
 #include "Games/stack_game.h"
+#include "Games/game_ui_theme.h"
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
@@ -354,10 +355,18 @@ static void DrawChunkCursor(uint16_t *buffer, int y_start, int chunk_height, int
     }
 }
 
+typedef struct {
+  const StackGame_t *game;
+  int16_t cursor_x;
+  int16_t cursor_y;
+  uint8_t show_cursor;
+} StackGameRenderContext_t;
+
 static void DrawGameOverlay(uint16_t *buffer, int y_start,
                             int chunk_height, void *context)
 {
-  const StackGame_t *game = context;
+  const StackGameRenderContext_t *render_context = context;
+  const StackGame_t *game = render_context->game;
   char text[32];
   GFX3D_FillChunkRect(buffer, y_start, chunk_height, 0, 0, GFX_WIDTH, 22, BLACK);
   snprintf(text, sizeof(text), "SCORE %lu", (unsigned long)game->score);
@@ -369,42 +378,58 @@ static void DrawGameOverlay(uint16_t *buffer, int y_start,
 
   if (game->phase != STACK_PHASE_GAME_OVER) return;
 
-  extern int16_t cursor_x;
-  extern int16_t cursor_y;
-  extern uint8_t show_cursor;
-
-  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 48, 72, 225, 97, 0x0841U);
-  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 48, 72, 225, 1, WHITE);
-  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 48, 168, 225, 1, WHITE);
-  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 48, 72, 1, 97, WHITE);
-  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 272, 72, 1, 97, WHITE);
+  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 42, 64, 236, 114,
+                      GAME_UI_NEON_MAGENTA);
+  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 44, 66, 232, 110,
+                      GAME_UI_PANEL);
+  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 49, 71, 222, 100,
+                      GAME_UI_PANEL_INNER);
+  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 58, 82, 204, 2,
+                      GAME_UI_NEON_CYAN);
+  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 80, 161, 160, 1,
+                      GAME_UI_GRID);
   GFX3D_DrawChunkText(buffer, y_start, chunk_height, "GAME OVER", FONT4,
-                      92, 86, 0xF800U, 0x0841U);
-  snprintf(text, sizeof(text), "SCORE %lu  BEST %lu",
+                      92, 90, GAME_UI_RED, GAME_UI_PANEL_INNER);
+  snprintf(text, sizeof(text), "SCORE %lu   BEST %lu",
            (unsigned long)game->score, (unsigned long)game->best_score);
-  GFX3D_DrawChunkText(buffer, y_start, chunk_height, text, FONT2, 76, 110,
-                      WHITE, 0x0841U);
+  GFX3D_DrawChunkText(buffer, y_start, chunk_height, text, FONT2, 70, 114,
+                      GAME_UI_WHITE, GAME_UI_PANEL_INNER);
 
   // Highlight colors based on cursor hover
-  uint16_t restart_btn_color = (cursor_x >= 60 && cursor_x <= 150 && cursor_y >= 135 && cursor_y <= 160) ? 0x07E0 : 0x7BEF;
-  uint16_t menu_btn_color = (cursor_x >= 170 && cursor_x <= 260 && cursor_y >= 135 && cursor_y <= 160) ? 0x07E0 : 0x7BEF;
+  uint8_t restart_hover = (render_context->cursor_x >= 60 &&
+                           render_context->cursor_x <= 150 &&
+                           render_context->cursor_y >= 135 &&
+                           render_context->cursor_y <= 160);
+  uint8_t menu_hover = (render_context->cursor_x >= 170 &&
+                        render_context->cursor_x <= 260 &&
+                        render_context->cursor_y >= 135 &&
+                        render_context->cursor_y <= 160);
+  uint16_t restart_btn_color = restart_hover ? GAME_UI_NEON_GREEN : GAME_UI_MUTED;
+  uint16_t menu_btn_color = menu_hover ? GAME_UI_NEON_GREEN : GAME_UI_MUTED;
 
   // Restart Button: X: 60-150, Y: 135-160
   GFX3D_FillChunkRect(buffer, y_start, chunk_height, 60, 135, 90, 25, restart_btn_color);
-  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 62, 137, 86, 21, 0x0841U);
-  GFX3D_DrawChunkText(buffer, y_start, chunk_height, "RESTART", FONT1, 78, 142, restart_btn_color, 0x0841U);
+  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 62, 137, 86, 21, GAME_UI_BG);
+  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 66, 156, 78, 1, GAME_UI_GRID_DIM);
+  GFX3D_DrawChunkText(buffer, y_start, chunk_height, "RESTART", FONT1, 78, 142, restart_btn_color, GAME_UI_BG);
 
   // Menu Button: X: 170-260, Y: 135-160
   GFX3D_FillChunkRect(buffer, y_start, chunk_height, 170, 135, 90, 25, menu_btn_color);
-  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 172, 137, 86, 21, 0x0841U);
-  GFX3D_DrawChunkText(buffer, y_start, chunk_height, "MENU", FONT1, 200, 142, menu_btn_color, 0x0841U);
+  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 172, 137, 86, 21, GAME_UI_BG);
+  GFX3D_FillChunkRect(buffer, y_start, chunk_height, 176, 156, 78, 1, GAME_UI_GRID_DIM);
+  GFX3D_DrawChunkText(buffer, y_start, chunk_height, "MENU", FONT1, 200, 142, menu_btn_color, GAME_UI_BG);
 
-  if (show_cursor) {
-      DrawChunkCursor(buffer, y_start, chunk_height, cursor_x, cursor_y, 0xFFE0U);
+  if (render_context->show_cursor) {
+      DrawChunkCursor(buffer, y_start, chunk_height,
+                      render_context->cursor_x,
+                      render_context->cursor_y,
+                      GAME_UI_YELLOW);
   }
 }
 
-void StackGame_Render(StackGame_t *game, Mesh_t *cube_mesh)
+void StackGame_Render(StackGame_t *game, Mesh_t *cube_mesh,
+                      int16_t cursor_x, int16_t cursor_y,
+                      uint8_t show_cursor)
 {
     static StackGamePhase_t drawn_phase = (StackGamePhase_t)UINT8_MAX;
     static Matrix4_t proj;
@@ -426,11 +451,17 @@ void StackGame_Render(StackGame_t *game, Mesh_t *cube_mesh)
     }
 
     static GFX3D_RenderObject_t render_objects[STACK_MAX_RENDER_OBJECTS];
+    StackGameRenderContext_t render_context = {
+        game,
+        cursor_x,
+        cursor_y,
+        show_cursor
+    };
     int object_count = StackGame_BuildRenderObjects(
         game, cube_mesh, render_objects, STACK_MAX_RENDER_OBJECTS);
     Matrix4_t view = StackGame_GetView(game);
     GFX3D_RenderOptions_t options = {
-        0x0841U, 0U, 0U, DrawGameOverlay, game
+        0x0841U, 0U, 0U, DrawGameOverlay, &render_context
     };
     GFX3D_RenderObjects(render_objects, object_count, view, proj, options);
     drawn_phase = game->phase;

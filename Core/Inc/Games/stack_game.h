@@ -46,6 +46,8 @@ void StackGame_HandlePress(StackGame_t *game);
 void StackGame_Update(StackGame_t *game, float delta_seconds);
 int StackGame_BuildRenderObjects(const StackGame_t *game, const Mesh_t *cube, GFX3D_RenderObject_t *objects, int capacity);
 Matrix4_t StackGame_GetView(const StackGame_t *game);
-void StackGame_Render(StackGame_t *game, Mesh_t *cube_mesh);
+void StackGame_Render(StackGame_t *game, Mesh_t *cube_mesh,
+                      int16_t cursor_x, int16_t cursor_y,
+                      uint8_t show_cursor);
 
 #endif

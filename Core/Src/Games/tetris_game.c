@@ -1,4 +1,5 @@
 #include "Games/tetris_game.h"
+#include "Games/game_ui_theme.h"
 #include "Graphics/graphics_2d.h"
 #include "Graphics/graphics_3d.h"
 #include "Display/fonts.h"
@@ -413,39 +414,51 @@ void TetrisGame_Render(TetrisGame_t *game, int16_t cursor_x, int16_t cursor_y, u
 
         // Game Over Overlay
         if (game->phase == TETRIS_PHASE_GAME_OVER) {
-            // Draw dark background box (X: 40 to 280, Y: 50 to 190)
-            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT, 40, 50, 240, 140, 0x0841); // Dark grey/black panel
-            
-            // Draw box borders
-            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT, 40, 50, 240, 1, COLOR_WHITE);
-            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT, 40, 189, 240, 1, COLOR_WHITE);
-            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT, 40, 50, 1, 140, COLOR_WHITE);
-            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT, 279, 50, 1, 140, COLOR_WHITE);
+            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT,
+                                38, 48, 244, 138, GAME_UI_NEON_MAGENTA);
+            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT,
+                                40, 50, 240, 134, GAME_UI_PANEL);
+            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT,
+                                45, 55, 230, 124, GAME_UI_PANEL_INNER);
+            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT,
+                                58, 78, 204, 2, GAME_UI_NEON_CYAN);
+            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT,
+                                80, 170, 160, 1, GAME_UI_GRID);
 
-            GFX3D_DrawChunkText(chunk_color_buffer, y_start, CHUNK_HEIGHT, "GAME OVER", FONT4, 90, 65, 0xF800, 0x0841);
-            
+            GFX3D_DrawChunkText(chunk_color_buffer, y_start, CHUNK_HEIGHT,
+                                "GAME OVER", FONT4, 90, 64,
+                                GAME_UI_RED, GAME_UI_PANEL_INNER);
+
             snprintf(text, sizeof(text), "SCORE: %lu", (unsigned long)game->score);
-            GFX3D_DrawChunkText(chunk_color_buffer, y_start, CHUNK_HEIGHT, text, FONT2, 105, 95, COLOR_WHITE, 0x0841);
+            GFX3D_DrawChunkText(chunk_color_buffer, y_start, CHUNK_HEIGHT,
+                                text, FONT2, 105, 96,
+                                GAME_UI_WHITE, GAME_UI_PANEL_INNER);
 
             // Draw two buttons: RESTART and MENU
             // Restart button: X: 55 to 155, Y: 130 to 160
             // Menu button: X: 165 to 265, Y: 130 to 160
-            uint16_t restart_btn_color = (cursor_x >= 55 && cursor_x <= 155 && cursor_y >= 130 && cursor_y <= 160) ? COLOR_ACCENT_1 : COLOR_DARKGREY;
-            uint16_t menu_btn_color = (cursor_x >= 165 && cursor_x <= 265 && cursor_y >= 130 && cursor_y <= 160) ? COLOR_ACCENT_1 : COLOR_DARKGREY;
+            uint8_t restart_hover = (cursor_x >= 55 && cursor_x <= 155 &&
+                                     cursor_y >= 130 && cursor_y <= 160);
+            uint8_t menu_hover = (cursor_x >= 165 && cursor_x <= 265 &&
+                                  cursor_y >= 130 && cursor_y <= 160);
+            uint16_t restart_btn_color = restart_hover ? GAME_UI_NEON_GREEN : GAME_UI_MUTED;
+            uint16_t menu_btn_color = menu_hover ? GAME_UI_NEON_GREEN : GAME_UI_MUTED;
 
             // Draw button background outlines
             GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT, 55, 130, 100, 30, restart_btn_color);
-            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT, 57, 132, 96, 26, 0x0841);
-            GFX3D_DrawChunkText(chunk_color_buffer, y_start, CHUNK_HEIGHT, "RESTART", FONT2, 73, 138, restart_btn_color, 0x0841);
+            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT, 57, 132, 96, 26, GAME_UI_BG);
+            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT, 62, 156, 86, 1, GAME_UI_GRID_DIM);
+            GFX3D_DrawChunkText(chunk_color_buffer, y_start, CHUNK_HEIGHT, "RESTART", FONT2, 73, 138, restart_btn_color, GAME_UI_BG);
 
             GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT, 165, 130, 100, 30, menu_btn_color);
-            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT, 167, 132, 96, 26, 0x0841);
-            GFX3D_DrawChunkText(chunk_color_buffer, y_start, CHUNK_HEIGHT, "MENU", FONT2, 198, 138, menu_btn_color, 0x0841);
+            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT, 167, 132, 96, 26, GAME_UI_BG);
+            GFX3D_FillChunkRect(chunk_color_buffer, y_start, CHUNK_HEIGHT, 172, 156, 86, 1, GAME_UI_GRID_DIM);
+            GFX3D_DrawChunkText(chunk_color_buffer, y_start, CHUNK_HEIGHT, "MENU", FONT2, 198, 138, menu_btn_color, GAME_UI_BG);
         }
 
         // Draw cursor if active on this screen
         if (show_cursor) {
-            DrawChunkCursor(chunk_color_buffer, y_start, CHUNK_HEIGHT, cursor_x, cursor_y, COLOR_YELLOW);
+            DrawChunkCursor(chunk_color_buffer, y_start, CHUNK_HEIGHT, cursor_x, cursor_y, GAME_UI_YELLOW);
         }
 
         // Send chunk buffer to display

@@ -87,7 +87,7 @@ def main():
         
         while True:
             ch = get_key_bytes()
-            if ch == b'\x11':
+            if ch == b'\x51':
                 print(f"\n{Color.RED}Ctrl+Q pressed. Exiting...{Color.ENDC}")
                 break
             

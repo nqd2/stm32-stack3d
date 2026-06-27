@@ -51,3 +51,4 @@ TouchGFX/simulator/msvs/.vs
 *.bak
 *.md
 !README.md
+.gitnexus

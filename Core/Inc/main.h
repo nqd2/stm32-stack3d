@@ -57,6 +57,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define OTG_FS_PowerSwitch_Pin GPIO_PIN_4
+#define OTG_FS_PowerSwitch_GPIO_Port GPIOC
 
 /* USER CODE BEGIN Private defines */
 #define USER_BUTTON_Pin GPIO_PIN_0
